@@ -16,6 +16,20 @@ if [ "$(id -u)" -ne 0 ]; then
   SUDO="sudo"
 fi
 
+# 0. Своп — на маленьких серверах (1 ГБ RAM) сборка фронтенда (Vite/tsc)
+#    внутри docker build может не влезть в память без подкачки. 2 ГБ с запасом,
+#    создаём только один раз — если своп уже есть (свой или от хостинга), не трогаем.
+if ! $SUDO swapon --show | grep -q .; then
+  log "Свопа нет — создаю 2 ГБ подкачки"
+  $SUDO fallocate -l 2G /swapfile 2>/dev/null || $SUDO dd if=/dev/zero of=/swapfile bs=1M count=2048
+  $SUDO chmod 600 /swapfile
+  $SUDO mkswap /swapfile
+  $SUDO swapon /swapfile
+  grep -q '^/swapfile ' /etc/fstab 2>/dev/null || echo '/swapfile none swap sw 0 0' | $SUDO tee -a /etc/fstab >/dev/null
+else
+  log "Своп уже есть — пропускаю"
+fi
+
 # 1. Docker + Compose plugin — ставим, только если ещё не установлены.
 #    Postgres отдельно ставить не нужно: он поднимается контейнером
 #    из docker-compose.yml (сервис "db"), на хосте не нужен.
