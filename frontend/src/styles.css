@@ -191,6 +191,59 @@ a {
   color: var(--ink-soft);
 }
 
+/* ---------- О проекте ---------- */
+
+.about-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.25rem;
+  margin-bottom: 2.5rem;
+  padding: 0.5rem 0;
+}
+
+.about-text {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.about-text h2 {
+  color: #c64c60;
+}
+
+.about-text p {
+  color: var(--ink-soft);
+  max-width: 80ch;
+}
+
+.about-text p:last-child {
+  margin-bottom: 0;
+}
+
+.about-art {
+  flex: 0 0 auto;
+  width: 280px;
+  height: auto;
+  display: block;
+}
+
+@media (max-width: 640px) {
+  .about-card {
+    flex-direction: column;
+    text-align: center;
+    padding: 1.5rem;
+  }
+
+  .about-text p {
+    margin-inline: auto;
+  }
+
+  .about-art {
+    width: 150px;
+  }
+}
+
 /* ---------- Плитки ---------- */
 
 .tiles {
