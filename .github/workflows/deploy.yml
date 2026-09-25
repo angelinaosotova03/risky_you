@@ -1,0 +1,40 @@
+name: Deploy
+
+# Запускается автоматически ПОСЛЕ того, как workflow CI успешно завершится
+# на ветке main — то есть только если тесты/типы/сборка зелёные.
+# Можно и вручную (кнопка "Run workflow" в разделе Actions на GitHub).
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch: {}
+
+jobs:
+  deploy:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Скопировать deploy/provision.sh на сервер
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: ${{ secrets.DEPLOY_PORT || 22 }}
+          source: "deploy/provision.sh"
+          target: "/tmp/risky-you-deploy"
+          strip_components: 1
+
+      - name: Провижининг + деплой по SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: ${{ secrets.DEPLOY_PORT || 22 }}
+          script: |
+            chmod +x /tmp/risky-you-deploy/provision.sh
+            DOMAIN="${{ secrets.DEPLOY_DOMAIN }}" /tmp/risky-you-deploy/provision.sh
