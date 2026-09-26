@@ -1,7 +1,9 @@
 import { averageMetric } from "../accuracy";
+import { archetypeTitle } from "../archetypes";
 import { getNorm, postResult } from "../api";
 import { getResults, saveResult } from "../storage";
 import { findTest, TESTS } from "../tests";
+import { TRAITS } from "../traits";
 import type { Game, GameResult, TestMeta } from "../types";
 
 function nextPlayableId(currentId: string): string {
@@ -59,26 +61,44 @@ async function showResult(root: HTMLElement, meta: TestMeta, game: Game, result:
         <p class="source">${s.science.source}</p>
       </aside>
       <div class="actions">
-        <button class="button button-quiet" type="button" data-share disabled>Поделиться</button>
+        <button class="button button-quiet" type="button" data-share-card disabled>Скачать карточку</button>
+        <button class="button button-quiet" type="button" data-share-radar disabled>Скачать диаграмму</button>
         <a class="button" href="/test/${nextPlayableId(meta.id)}" data-link>Следующая игра</a>
         <a class="button button-quiet" href="/test/${meta.id}" data-link>Пройти ещё раз (точнее)</a>
       </div>
     </div>`;
 
   const compare = root.querySelector(".result-compare")!;
-  const shareBtn = root.querySelector<HTMLButtonElement>("[data-share]")!;
+  const cardBtn = root.querySelector<HTMLButtonElement>("[data-share-card]")!;
+  const radarBtn = root.querySelector<HTMLButtonElement>("[data-share-radar]")!;
   let sharePhrase = `Мой результат в «${meta.title}»: ${s.primary.display}`;
+  let archetype: string | null = null;
 
-  shareBtn.addEventListener("click", async () => {
-    shareBtn.disabled = true;
-    shareBtn.textContent = "Готовим картинку…";
+  cardBtn.addEventListener("click", async () => {
+    cardBtn.disabled = true;
+    const label = cardBtn.textContent;
+    cardBtn.textContent = "Готовим картинку…";
     try {
       const { generateShareCard, downloadDataUrl } = await import("../shareCard");
-      const dataUrl = await generateShareCard(sharePhrase);
-      downloadDataUrl(dataUrl, "risky-you.png");
+      const dataUrl = await generateShareCard(sharePhrase, archetype, meta.tint);
+      downloadDataUrl(dataUrl, "risky-you-card.png");
     } finally {
-      shareBtn.disabled = false;
-      shareBtn.textContent = "Поделиться";
+      cardBtn.disabled = false;
+      cardBtn.textContent = label!;
+    }
+  });
+
+  radarBtn.addEventListener("click", async () => {
+    radarBtn.disabled = true;
+    const label = radarBtn.textContent;
+    radarBtn.textContent = "Готовим картинку…";
+    try {
+      const { generateRadarCard, downloadDataUrl } = await import("../shareCard");
+      const dataUrl = await generateRadarCard();
+      downloadDataUrl(dataUrl, "risky-you-radar.png");
+    } finally {
+      radarBtn.disabled = false;
+      radarBtn.textContent = label!;
     }
   });
 
@@ -93,8 +113,11 @@ async function showResult(root: HTMLElement, meta: TestMeta, game: Game, result:
   } else if (norm.percentile === null) {
     compare.textContent = `Пока участников слишком мало для сравнения (${norm.sample_size}). Загляни позже.`;
   } else {
-    sharePhrase = s.primary.comparison(Math.round(norm.percentile));
+    const p = Math.round(norm.percentile);
+    sharePhrase = s.primary.comparison(p);
+    archetype = archetypeTitle(meta.id, p, TRAITS[meta.id]?.invert);
     compare.textContent = sharePhrase;
   }
-  shareBtn.disabled = false;
+  cardBtn.disabled = false;
+  radarBtn.disabled = false;
 }
