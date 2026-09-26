@@ -1,6 +1,7 @@
 import { averageMetric } from "../accuracy";
 import { archetypeTitle } from "../archetypes";
 import { getNorm, postResult } from "../api";
+import { estimateFromRange } from "../radar-data";
 import { getResults, saveResult } from "../storage";
 import { findTest, TESTS } from "../tests";
 import { TRAITS } from "../traits";
@@ -108,6 +109,7 @@ async function showResult(root: HTMLElement, meta: TestMeta, game: Game, result:
   const averaged = averageMetric(getResults(), meta.id, s.primary.metric);
   const rawValue = averaged?.value ?? result.metrics[s.primary.metric];
   const norm = await getNorm(meta.id, s.primary.metric, rawValue);
+  const trait = TRAITS[meta.id];
   if (!norm) {
     compare.textContent = "Сравнение с другими сейчас недоступно, но результат сохранён в профиле.";
   } else if (norm.percentile === null) {
@@ -115,8 +117,19 @@ async function showResult(root: HTMLElement, meta: TestMeta, game: Game, result:
   } else {
     const p = Math.round(norm.percentile);
     sharePhrase = s.primary.comparison(p);
-    archetype = archetypeTitle(meta.id, p, TRAITS[meta.id]?.invert);
     compare.textContent = sharePhrase;
+  }
+  // Настоящего процентиля может не быть ещё очень долго (нужно 100+ игроков) —
+  // для архетипа на карточке используем ту же грубую оценку по диапазону, что
+  // уже показывает точку на радаре, а не молчим до накопления реальных данных
+  if (trait?.range) {
+    const directed =
+      norm && norm.percentile !== null
+        ? trait.invert
+          ? 100 - Math.round(norm.percentile)
+          : Math.round(norm.percentile)
+        : estimateFromRange(rawValue, trait.range, trait.invert);
+    archetype = archetypeTitle(meta.id, directed);
   }
   cardBtn.disabled = false;
   radarBtn.disabled = false;

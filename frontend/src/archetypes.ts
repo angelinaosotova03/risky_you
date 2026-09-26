@@ -24,14 +24,13 @@ function tierIndex(percentile: number): number {
 }
 
 /**
- * rawPercentile — процентиль сырой метрики, тот же `p`, что передаётся в
- * summarize().primary.comparison(p). invert — trait.invert из traits.ts:
- * для черт с обратной шкалой (например, Терпеливость) высокий титул
- * должен triggерить на НИЗКОМ сыром проценте.
+ * value — уже направленное значение 0-100, где больше = сильнее выражена черта
+ * (то же самое число, что рисуется точкой на радаре — см. radar-data.ts). Для
+ * настоящего процентиля из getNorm() направление нужно поправить на invert
+ * ДО вызова этой функции — сама она больше не инвертирует.
  */
-export function archetypeTitle(testId: string, rawPercentile: number, invert?: boolean): string | null {
+export function archetypeTitle(testId: string, value: number): string | null {
   const tiers = ARCHETYPES[testId];
   if (!tiers) return null;
-  const p = invert ? 100 - rawPercentile : rawPercentile;
-  return tiers[tierIndex(p)];
+  return tiers[tierIndex(value)];
 }

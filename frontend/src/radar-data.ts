@@ -20,7 +20,7 @@ export interface AxisPoint {
 const clamp = (n: number, min: number, max: number) => Math.min(max, Math.max(min, n));
 
 /** Пока других участников мало для percentile, оцениваем твой результат по диапазону самой игры */
-function estimateFromRange(rawValue: number, range: [number, number], invert?: boolean): number {
+export function estimateFromRange(rawValue: number, range: [number, number], invert?: boolean): number {
   const [min, max] = range;
   const scaled = clamp(((rawValue - min) / (max - min)) * 100, 0, 100);
   return Math.round(invert ? 100 - scaled : scaled);
